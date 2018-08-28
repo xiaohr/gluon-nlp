@@ -43,7 +43,6 @@ import math
 import os
 import random
 import sys
-import tempfile
 import time
 import warnings
 
@@ -114,6 +113,9 @@ def parse_args():
     group.add_argument('--frequent-token-subsampling', type=float,
                        default=1E-4,
                        help='Frequent token subsampling constant.')
+    group.add_argument('--max-vocab-size', type=int,
+                       help='Limit the number of words considered. '
+                       'OOV words will be ignored.')
 
     # Optimization options
     group = parser.add_argument_group('Optimization arguments')
@@ -168,6 +170,11 @@ def get_train_data(args):
     with print_time('load training data'):
         f_data = text8 if args.data == 'text8' else wiki
         data, vocab, idx_to_counts = f_data()
+
+    if vocab.max_vocab_size:
+        for token in vocab.idx_to_token[vocab.max_vocab_size:]:
+            vocab.token_to_idx.pop(token)
+        vocab.idx_to_token = vocab.idx_to_token[:vocab.max_vocab_size]
 
     # Apply transforms
     def code(shard):
